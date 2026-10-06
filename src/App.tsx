@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import type { Variants } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Mail,
   Phone,
@@ -8,10 +10,9 @@ import {
   Briefcase,
   GraduationCap,
   Code2,
-  Rocket,
   CheckCircle2,
   ChevronRight,
-  Sparkles,
+  ChevronLeft,
   Layers,
   Terminal,
   Smartphone,
@@ -21,11 +22,23 @@ import {
   ArrowUpRight,
   ArrowDown,
   X,
-  ShieldCheck,
-  HeartHandshake,
   Eye,
-  GitBranch
+  GitBranch,
+  AlertTriangle,
+  GitPullRequest,
+  MousePointerClick,
+  Workflow,
+  User,
+  Fingerprint,
+  FolderGit2,
+  Calendar,
+  FileText,
+  ExternalLink,
+  Users,
+  ZoomIn
 } from 'lucide-react';
+import { PROJECTS_DATA, type ProjectItem, type ProjectScreenshot } from './data/projects';
+import { ContributionGauge, Callout, StatCard, Grid, ProjectImage, ImageGrid } from './components/mdx';
 
 // Animation variants
 const fadeInUp: Variants = {
@@ -48,103 +61,318 @@ const staggerContainer: Variants = {
   }
 };
 
-// Types
-interface ProjectItem {
-  id: string;
-  category: 'work' | 'side';
-  categoryLabel: string;
-  title: string;
-  subtitle: string;
-  period: string;
-  role: string;
-  tech: string[];
-  summary: string;
-  details: string[];
-  metrics?: string[];
-  features?: string[];
-}
-
-const PROJECTS_DATA: ProjectItem[] = [
-  {
-    id: 'hi-me',
-    category: 'work',
-    categoryLabel: '실무 프로젝트',
-    title: 'Hi-Me (맞춤 운동 챌린지 서비스)',
-    subtitle: '개인 맞춤형 건강 관리 & 챌린지 웹뷰 서비스',
-    period: '2024.12 ~ 2025.04',
-    role: '프론트엔드 개발 (웹뷰 퍼블리싱 & 기능 구현)',
-    tech: ['React', 'Tailwind CSS', 'React Query', 'TypeScript', 'Webview Bridge'],
-    summary: '사용자 맞춤형 건강 관리 및 운동 챌린지를 제공하는 서비스로, 모바일 앱 내 하이브리드 웹뷰 화면과 미션 수행 기능을 주도적으로 개발했습니다.',
-    details: [
-      '미션 기능 웹뷰 화면 전체 퍼블리싱 및 반응형 UI/UX 구축',
-      'React Query를 도입하여 서버 데이터 캐싱 및 미션 상태 실시간 동기화',
-      '네이티브 앱과의 안정적인 통신을 위한 Webview Bridge 연동 프로토콜 구성',
-      '다양한 모바일 해상도 및 OS별 렌더링 오차를 고려한 크로스 브라우징 대응'
-    ],
-    metrics: ['앱 내 미션 참여율 증대', '서버 데이터 재요청 최적화', '네이티브-웹뷰 통신 안정화']
-  },
-  {
-    id: 'valuelink',
-    category: 'work',
-    categoryLabel: '실무 프로젝트',
-    title: 'ValueLink / CPLink',
-    subtitle: 'CSO 계약 & 실적 관리 엔터프라이즈 플랫폼',
-    period: '2024.09 ~ 2025.03',
-    role: '풀스택 개발자 (책임) · 인프라 구축 & 기능 개발',
-    tech: ['Next.js', 'FastAPI', 'NCP', 'Docker', 'GitHub Actions', 'Recoil', 'AWS S3'],
-    summary: '제약 CSO 업계의 복잡한 전자계약 및 대용량 실적 데이터를 효율적으로 정산·관리하는 B2B 플랫폼으로, 온프레미스/클라우드 인프라 구축부터 백엔드 API, 프론트엔드까지 전 과정을 책임 개발했습니다.',
-    details: [
-      '로컬 파일 저장 구조의 병목 문제를 해결하기 위해 AWS S3 객체 스토리지 기반으로 시스템 아키텍처 전면 개편',
-      'On-Premise 및 NCP 운영 서버 환경 Docker 컨테이너화 및 GitHub Actions CI/CD 파이프라인 구축',
-      '전자계약 체결 워크플로우 및 대규모 실적 데이터 집계/조회 기능 개발',
-      'FastAPI 비동기 쿼리 최적화로 복잡한 정산 데이터 조회 속도 대폭 개선'
-    ],
-    metrics: ['파일 저장 및 다운로드 안정성 100% 확보', '배포 프로세스 자동화 (CI/CD)', '실적 쿼리 응답 속도 최적화']
-  },
-  {
-    id: 'dearmyhome',
-    category: 'work',
-    categoryLabel: '실무 프로젝트',
-    title: 'DearMyHome',
-    subtitle: 'B2B 인테리어 쇼핑몰 & 전사 어드민 관리 시스템',
-    period: '2022.12 ~ 2024.06',
-    role: '프론트엔드 책임 개발 · 유저/어드민/앱 출시',
-    tech: ['React', 'Next.js', 'Redux Toolkit', 'Toss Payments', 'React Native', 'AWS'],
-    summary: '인테리어 자재 B2B 이커머스 서비스로, 일반 고객용 웹 플랫폼(CRA)과 내부 운영자를 위한 통합 어드민(Next.js), 그리고 양대 마켓 모바일 앱(React Native WebView)을 모두 단독 및 리드로 구축했습니다.',
-    details: [
-      '프로젝트 초기 아키텍처 설계 (CRA 유저 쇼핑몰 & Next.js 관리자 전용 대시보드 분리 구축)',
-      '토스 페이먼츠(Toss Payments) PG 연동을 통한 결제, 취소, 부분 환불 결제 플로우 완성',
-      '네이버, 구글, 애플, 카카오 4대 소셜 로그인 OAuth2 통합 연동',
-      '주문/배송/상품/정산/회원 관리를 위한 대규모 관리자 시스템 풀스택 구현',
-      'React Native WebView 래핑을 통한 iOS App Store 및 Google Play Store 정식 앱 출시 및 심사 통과'
-    ],
-    metrics: ['양대 앱 마켓 정식 런칭', '결제 및 소셜 로그인 통합 연동', 'B2B 운영 효율성 향상']
-  },
-  {
-    id: 'pome',
-    category: 'side',
-    categoryLabel: '사이드 프로젝트',
-    title: 'POME (맞춤 운동 영상 서비스)',
-    subtitle: 'MUX 스트리밍 & Supabase 기반 크로스플랫폼 운동 앱',
-    period: '개인 사이드 프로젝트',
-    role: '기획 · 디자인 · Full-Stack 개발 (1인 개발)',
-    tech: ['Flutter', 'FastAPI', 'AWS S3', 'MUX Video', 'Supabase'],
-    summary: '개인 맞춤형 운동 영상을 고화질로 스트리밍하고 운동 루틴을 기록할 수 있는 모바일 서비스로, 서비스 기획부터 API, 비디오 인코딩 파이프라인, Flutter 앱까지 1인 풀스택으로 완성했습니다.',
-    details: [
-      'MUX Video API를 연동하여 네트워크 대역폭에 따른 적응형 HLS 스트리밍 환경 구현',
-      'FastAPI 기반 RESTful 백엔드 구축 및 AWS S3 비디오 원본 스토리지 연동',
-      'Supabase를 활용한 실시간 데이터베이스 및 인증(Auth) 시스템 구축',
-      'Flutter를 통한 유려한 마이크로 인터랙션과 반응형 모바일 UI 구현'
-    ],
-    metrics: ['적응형 스트리밍 구현', '1인 풀사이클 개발 완성', '크로스플랫폼 모바일 앱']
+const resolveAssetUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
   }
-];
+  const cleanPath = url.replace(/^\.?\//, '');
+  const base = import.meta.env.BASE_URL || '/';
+  return base.endsWith('/') ? `${base}${cleanPath}` : `${base}/${cleanPath}`;
+};
+
+const getScreenshotData = (item: ProjectScreenshot | string, index: number) => {
+  if (typeof item === 'string') {
+    return {
+      src: resolveAssetUrl(item),
+      caption: undefined,
+      alt: `스크린샷 미리보기 ${index + 1}`
+    };
+  }
+  return {
+    src: resolveAssetUrl(item.src),
+    caption: item.caption,
+    alt: item.alt || item.caption || `스크린샷 미리보기 ${index + 1}`
+  };
+};
+
+const mdxComponents: Record<string, any> = {
+  h1: ({ ...props }: any) => <h1 className="text-xl font-black text-slate-900 mt-7 mb-3.5 pb-2 border-b border-slate-200" {...props} />,
+  h2: ({ ...props }: any) => <h2 className="text-lg font-bold text-slate-900 mt-7 mb-3 flex items-center gap-2" {...props} />,
+  h3: ({ children, ...props }: any) => {
+    const str = String(children);
+    const isDev = str.includes('개발') || str.includes('아키텍처');
+    const isTroubleshoot = str.includes('트러블슈팅') || str.includes('배운 점');
+
+    return (
+      <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/90 mt-8 mb-4 first:mt-1">
+        <div className={`p-1.5 rounded-xl border ${isTroubleshoot
+          ? 'bg-amber-50 text-amber-600 border-amber-200'
+          : isDev
+            ? 'bg-indigo-50 text-indigo-600 border-indigo-200'
+            : 'bg-blue-50 text-blue-600 border-blue-200'
+          }`}>
+          {isTroubleshoot ? (
+            <AlertTriangle size={17} />
+          ) : isDev ? (
+            <Workflow size={17} />
+          ) : (
+            <FileText size={17} />
+          )}
+        </div>
+        <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight" {...props}>
+          {children}
+        </h3>
+      </div>
+    );
+  },
+  h4: ({ children, ...props }: any) => (
+    <h4 className="text-sm sm:text-base font-bold text-slate-900 mt-6 mb-2.5 flex items-center gap-2 border-l-4 border-blue-600 pl-3 py-0.5 tracking-tight" {...props}>
+      {children}
+    </h4>
+  ),
+  p: ({ ...props }: any) => <p className="text-sm text-slate-600 leading-relaxed mb-3.5 break-keep" {...props} />,
+  ul: ({ ...props }: any) => <ul className="space-y-2 text-sm text-slate-600 mb-5 pl-1" {...props} />,
+  ol: ({ ...props }: any) => <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 mb-5 pl-1" {...props} />,
+  li: ({ children, ...props }: any) => (
+    <li className="flex items-start gap-2.5 leading-relaxed text-slate-600 text-sm" {...props}>
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+      <span className="flex-1 break-keep">{children}</span>
+    </li>
+  ),
+  strong: ({ children, ...props }: any) => {
+    const str = String(children);
+    if (str.includes('이슈')) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 text-xs mr-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+          {children}
+        </span>
+      );
+    }
+    if (str.includes('원인')) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 text-xs mr-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          {children}
+        </span>
+      );
+    }
+    if (str.includes('해결')) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 text-xs mr-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          {children}
+        </span>
+      );
+    }
+    return (
+      <strong className="font-bold text-blue-900 bg-blue-50/90 px-1.5 py-0.5 rounded border border-blue-200/60" {...props}>
+        {children}
+      </strong>
+    );
+  },
+  blockquote: ({ children, ...props }: any) => (
+    <div className="my-6 rounded-2xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/40 border border-amber-200/90 p-5 sm:p-6 shadow-xs max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-amber-200/70">
+        <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-900">
+          <AlertTriangle size={15} className="text-amber-600" />
+          <span>TROUBLESHOOTING & DECISION RECORD</span>
+        </div>
+        <span className="text-[11px] font-mono font-semibold text-amber-700 bg-amber-100/70 px-2.5 py-0.5 rounded-full border border-amber-200">
+          문제 해결 회고
+        </span>
+      </div>
+      <blockquote className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2.5 not-italic" {...props}>
+        {children}
+      </blockquote>
+    </div>
+  ),
+  pre: ({ children }: any) => (
+    <div className="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-lg max-w-full my-4">
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+        </div>
+        <span className="text-[10px] text-slate-500 font-mono">code preview</span>
+      </div>
+      <div className="p-4 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed max-w-full [&_code]:!bg-transparent [&_code]:!text-slate-200 [&_code]:!p-0 [&_code]:!border-0 [&_code]:!font-mono">
+        <pre className="font-mono text-xs leading-relaxed">
+          {children}
+        </pre>
+      </div>
+    </div>
+  ),
+  code: ({ className, children, ...props }: any) => {
+    const isBlock = Boolean(className?.includes('language-')) || String(children).includes('\n');
+    if (isBlock) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        className="px-1.5 py-0.5 mx-0.5 rounded-md bg-slate-100 text-blue-700 font-mono text-xs border border-slate-200 font-semibold inline align-baseline"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+  table: ({ ...props }: any) => (
+    <div className="overflow-x-auto my-5 rounded-xl border border-slate-200 shadow-xs max-w-full">
+      <table className="min-w-full text-xs text-left border-collapse" {...props} />
+    </div>
+  ),
+  th: ({ ...props }: any) => <th className="bg-slate-100 p-3 font-bold text-slate-800 border-b border-slate-200" {...props} />,
+  td: ({ ...props }: any) => <td className="p-3 border-b border-slate-100 text-slate-700" {...props} />,
+  a: ({ ...props }: any) => <a className="text-blue-600 font-semibold underline hover:text-blue-700 transition-colors" target="_blank" rel="noreferrer" {...props} />,
+  hr: () => (
+    <div className="relative my-7">
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t border-slate-200" />
+      </div>
+      <div className="relative flex justify-center">
+        <span className="bg-white px-3 text-slate-400 text-xs font-mono">✦ ✦ ✦</span>
+      </div>
+    </div>
+  ),
+  img: ({ src, alt, ...props }: any) => (
+    <figure className="my-5 flex flex-col items-center text-center">
+      <img
+        src={src}
+        alt={alt || ''}
+        className="rounded-2xl border border-slate-200/90 shadow-sm max-w-full h-auto max-h-[500px]"
+        loading="lazy"
+        {...props}
+      />
+      {alt && (
+        <figcaption className="mt-2 text-xs text-slate-500 font-medium">
+          {alt}
+        </figcaption>
+      )}
+    </figure>
+  ),
+  // Built-in components available directly in MDX:
+  ContributionGauge,
+  Callout,
+  StatCard,
+  Grid,
+  ProjectImage,
+  ImageGrid
+};
 
 export default function App() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'work' | 'side'>('all');
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Current project navigation index inside modal
+  const currentIndex = selectedProject ? PROJECTS_DATA.findIndex(p => p.id === selectedProject.id) : -1;
+  const prevProject = currentIndex > 0 ? PROJECTS_DATA[currentIndex - 1] : null;
+  const nextProject = currentIndex >= 0 && currentIndex < PROJECTS_DATA.length - 1 ? PROJECTS_DATA[currentIndex + 1] : null;
+
+  // Screenshot gallery scroll & drag state
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
+
+  const checkGalleryScroll = () => {
+    if (galleryRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = galleryRef.current;
+      setCanScrollLeft(scrollLeft > 8);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 8);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(checkGalleryScroll, 80);
+    const el = galleryRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkGalleryScroll, { passive: true });
+      window.addEventListener('resize', checkGalleryScroll);
+      return () => {
+        clearTimeout(timer);
+        el.removeEventListener('scroll', checkGalleryScroll);
+        window.removeEventListener('resize', checkGalleryScroll);
+      };
+    }
+    return () => clearTimeout(timer);
+  }, [selectedProject]);
+
+  const handleGalleryScroll = (direction: 'left' | 'right') => {
+    if (galleryRef.current) {
+      const amount = galleryRef.current.clientWidth * 0.75;
+      galleryRef.current.scrollBy({
+        left: direction === 'left' ? -amount : amount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleGalleryMouseDown = (e: React.MouseEvent) => {
+    if (!galleryRef.current) return;
+    isDragging.current = true;
+    startX.current = e.pageX - galleryRef.current.offsetLeft;
+    scrollLeftStart.current = galleryRef.current.scrollLeft;
+    dragDistance.current = 0;
+  };
+
+  const handleGalleryMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !galleryRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - galleryRef.current.offsetLeft;
+    const diff = x - startX.current;
+    dragDistance.current = Math.abs(diff);
+    galleryRef.current.scrollLeft = scrollLeftStart.current - diff;
+  };
+
+  const handleGalleryMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  // Reset selected image when project modal changes or closes
+  useEffect(() => {
+    setSelectedImageIndex(null);
+  }, [selectedProject]);
+
+  // Keyboard navigation & body scroll lock for modal and lightbox
+  useEffect(() => {
+    if (!selectedProject) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If Lightbox is active, prioritize lightbox navigation
+      if (selectedImageIndex !== null && selectedProject.screenshots && selectedProject.screenshots.length > 0) {
+        const count = selectedProject.screenshots.length;
+        if (e.key === 'Escape') {
+          setSelectedImageIndex(null);
+        } else if (e.key === 'ArrowLeft') {
+          setSelectedImageIndex(prev => (prev !== null && prev > 0 ? prev - 1 : count - 1));
+        } else if (e.key === 'ArrowRight') {
+          setSelectedImageIndex(prev => (prev !== null && prev < count - 1 ? prev + 1 : 0));
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        setSelectedProject(null);
+      } else if (e.key === 'ArrowLeft') {
+        const idx = PROJECTS_DATA.findIndex(p => p.id === selectedProject.id);
+        if (idx > 0) setSelectedProject(PROJECTS_DATA[idx - 1]);
+      } else if (e.key === 'ArrowRight') {
+        const idx = PROJECTS_DATA.findIndex(p => p.id === selectedProject.id);
+        if (idx < PROJECTS_DATA.length - 1) setSelectedProject(PROJECTS_DATA[idx + 1]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [selectedProject, selectedImageIndex]);
 
   // Scroll Progress
   const { scrollYProgress, scrollY } = useScroll();
@@ -159,6 +387,29 @@ export default function App() {
       setShowScrollTop(latest > 400);
     });
   }, [scrollY]);
+
+  // URL Hash Navigation (e.g. http://localhost:5173/#projects)
+  useEffect(() => {
+    const scrollToHash = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const id = decodeURIComponent(hash.slice(1));
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+
+    // Initial mount scroll after DOM elements are ready
+    const timer = setTimeout(scrollToHash, 150);
+    window.addEventListener('hashchange', scrollToHash);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('hashchange', scrollToHash);
+    };
+  }, []);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText('tnqhd1139@gmail.com');
@@ -193,10 +444,10 @@ export default function App() {
         >
           <a href="#" className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              PS
+              FE
             </div>
             <span className="font-bold tracking-tight text-slate-800 group-hover:text-blue-600 transition-colors text-sm md:text-base">
-              박수봉 <span className="text-blue-600 font-mono text-xs">.dev</span>
+              Subong Park
             </span>
           </a>
 
@@ -214,13 +465,13 @@ export default function App() {
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 transition-all active:scale-95"
             >
               {copiedEmail ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} className="text-blue-600" />}
-              <span>{copiedEmail ? '복사됨!' : '이메일 복사'}</span>
+              <span>{copiedEmail ? 'COPIED!' : 'E-MAIL'}</span>
             </button>
             <a
               href="#contact"
               className="text-xs font-bold px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 transition-all active:scale-95"
             >
-              연락하기
+              CONTACT
             </a>
           </div>
         </motion.nav>
@@ -247,33 +498,34 @@ export default function App() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span>Open for Opportunities & Collaboration</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-blue-600 font-bold">새로운 기회를 찾고 있습니다</span>
+                <span>Available for Work</span>
               </div>
             </motion.div>
 
             {/* Main Headline */}
             <motion.div variants={fadeInUp} className="space-y-3 mb-6">
               <p className="text-lg md:text-2xl text-slate-500 font-semibold tracking-tight">
-                디테일한 UI/UX와 생동감 있는 인터랙션을 만드는
+                디자인부터 백엔드까지, 서비스의 전 과정을 이해하고 개발하는
               </p>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.1] text-slate-900">
-                <span>프론트엔드 개발자 </span>
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 bg-clip-text text-transparent">
+              <div className="text-3xl md:text-5xl lg:text-6xl text-slate-900">
+                프론트엔드 개발자
+              </div>
+              <h1 className="mt-[-12px] text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-slate-900">
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 bg-clip-text text-transparent font-black">
                   박수봉
                 </span>
+                <span className="inline-block pl-4 text-slate-700 font-semibold tracking-tight">입니다.</span>
               </h1>
             </motion.div>
 
             {/* Description */}
             <motion.p
               variants={fadeInUp}
-              className="max-w-2xl text-base md:text-xl text-slate-600 leading-relaxed font-normal mb-10 break-keep"
+              className="max-w-4xl text-base md:text-xl text-slate-600 leading-relaxed font-normal mb-10 break-keep"
             >
-              퍼블리싱 기반의 섬세한 UI 감각과 클라우드·백엔드 인프라 이해도를 바탕으로,
+              탄탄한 퍼블리싱 기본기, 백엔드 인프라 이해도를 갖춘 프론트엔드 개발자입니다.
               <br className="hidden sm:inline" />
-              인터랙션의 완성도부터 서비스 전체 생명주기까지 주도적으로 완성합니다.
+              단순히 화면 구현에만 머무르지 않고, 서비스가 사용자에게 안정적으로 닿는 전 과정을 오너십을 갖고 만듭니다.
             </motion.p>
 
             {/* Quick Contact & Action Buttons */}
@@ -336,23 +588,23 @@ export default function App() {
                 {
                   icon: Layers,
                   title: '4+ Years Experience',
-                  desc: '퍼블리셔에서 프론트·풀스택으로 확장된 탄탄한 기본기',
+                  desc: '퍼블리셔로 다진 웹 표준 기본기 위에 프론트엔드 역량을 더한 4년',
                   color: 'from-blue-50/90 to-white',
                   borderColor: 'border-blue-100',
                   accent: 'text-blue-600'
                 },
                 {
-                  icon: Rocket,
-                  title: 'Full Lifecycle Ownership',
-                  desc: '인프라 구축, 백엔드 API, 웹뷰 및 양대 앱 스토어 출시 경험',
+                  icon: Workflow,
+                  title: 'From Code to Deploy',
+                  desc: '백엔드 API 연동부터 클라우드 인프라, 앱스토어 배포까지 완주한 경험',
                   color: 'from-indigo-50/90 to-white',
                   borderColor: 'border-indigo-100',
                   accent: 'text-indigo-600'
                 },
                 {
-                  icon: Sparkles,
-                  title: 'UI/UX & Interactions',
-                  desc: '모션 라이브러리와 마이크로 인터랙션 중심의 탁월한 사용자 경험',
+                  icon: MousePointerClick,
+                  title: 'UI/UX & Interaction',
+                  desc: '로딩, 에러, 완료 등 사용자의 모든 조작에 명확한 시각적 피드백과 모션 제공',
                   color: 'from-cyan-50/90 to-white',
                   borderColor: 'border-cyan-100',
                   accent: 'text-cyan-600'
@@ -391,6 +643,7 @@ export default function App() {
         {/* Section: About Me (Bento Grid) */}
         <motion.section
           id="about"
+          className="scroll-mt-28"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -398,7 +651,7 @@ export default function App() {
         >
           <div className="flex items-center gap-3 mb-10 border-b border-slate-200 pb-4">
             <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-              <Rocket size={22} />
+              <User size={22} />
             </div>
             <div>
               <span className="text-xs font-mono uppercase tracking-wider text-blue-600 font-bold">About Me</span>
@@ -419,17 +672,17 @@ export default function App() {
                   Core Mindset
                 </span>
                 <h3 className="text-2xl md:text-3xl font-black text-slate-900 mb-6 leading-snug break-keep">
-                  "퍼블리싱 기반의 높은 UI/UX 이해도로,<br />
+                  "UI 인터랙션의 완성도에서 시작해,<br />
                   <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    인터랙션부터 클라우드 배포까지
-                  </span> 책임집니다."
+                    서비스가 동작하는 전 과정
+                  </span>을 책임집니다."
                 </h3>
                 <div className="space-y-4 text-slate-600 text-sm md:text-base leading-relaxed break-keep">
                   <p>
-                    웹 퍼블리셔로 시작하여 웹 표준과 마이크로 인터랙션의 가치를 깊이 체감했습니다. 사용자가 마주하는 첫 찰나의 사용성과 부드러운 반응성이 서비스 신뢰도를 결정한다고 믿습니다.
+                    웹 퍼블리셔로 개발을 시작하며 웹 표준과 마크업의 중요성을 배웠고, 매끄러운 반응성과 모션이 사용자 경험에 얼마나 큰 차이를 만드는지 경험했습니다.
                   </p>
                   <p>
-                    단순히 기획서에 명시된 화면만을 찍어내는 것을 넘어, 비즈니스 목표를 온전히 구현하기 위해 On-Premise 및 NCP/AWS 인프라, Docker 환경 세팅, FastAPI 백엔드 개발, 그리고 하이브리드 앱 배포까지 프로젝트 전체 생명주기를 아우르는 시야를 갖추었습니다.
+                    하지만 화면 구현만으로는 좋은 서비스를 완성할 수 없다는 것을 느꼈습니다. 병목 없는 데이터 처리와 안정적인 배포 환경을 만들기 위해 On-Premise/NCP 인프라, Docker, FastAPI 백엔드, 앱스토어 배포까지 직접 부딪히며 서비스 전체의 흐름을 꿰뚫는 개발자로 성장해 왔습니다.
                   </p>
                 </div>
               </div>
@@ -443,7 +696,7 @@ export default function App() {
             >
               <div>
                 <h4 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
-                  <Sparkles size={18} className="text-blue-600" />
+                  <Fingerprint size={18} className="text-blue-600" />
                   프로필 요약
                 </h4>
                 <div className="space-y-3.5 text-sm">
@@ -457,7 +710,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                     <span className="text-slate-500">전문 분야</span>
-                    <span className="font-bold text-blue-600">Frontend / Fullstack</span>
+                    <span className="font-bold text-blue-600">Frontend</span>
                   </div>
                   <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                     <span className="text-slate-500">연락처</span>
@@ -493,11 +746,11 @@ export default function App() {
               className="glass-card p-6 rounded-3xl border border-slate-200/80 bg-white"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mb-4">
-                <ShieldCheck size={20} />
+                <AlertTriangle size={20} />
               </div>
-              <h4 className="font-bold text-slate-900 text-lg mb-2">철저한 리스크 관리</h4>
+              <h4 className="font-bold text-slate-900 text-lg mb-2">예외 케이스를 먼저 챙기는 방어 코딩</h4>
               <p className="text-slate-600 text-xs md:text-sm leading-relaxed break-keep">
-                신중하고 꼼꼼한 성향으로 잠재적 예외 케이스와 네트워크 에러, 엣지 케이스를 사전에 시뮬레이션하고 방어하여 서비스의 신뢰성을 보장합니다.
+                네트워크 지연, 빈 데이터(Empty State), 서버 에러 등 시안에 없는 엣지 케이스를 먼저 시뮬레이션하고 방어 코드를 작성합니다.
               </p>
             </motion.div>
 
@@ -508,11 +761,11 @@ export default function App() {
               className="glass-card p-6 rounded-3xl border border-slate-200/80 bg-white"
             >
               <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center mb-4">
-                <HeartHandshake size={20} />
+                <GitPullRequest size={20} />
               </div>
-              <h4 className="font-bold text-slate-900 text-lg mb-2">투명하고 능동적인 협업</h4>
+              <h4 className="font-bold text-slate-900 text-lg mb-2">소통 비용을 낮추는 유연한 협업</h4>
               <p className="text-slate-600 text-xs md:text-sm leading-relaxed break-keep">
-                문서화와 기술 싱크를 체계화하여 기획자, 디자이너, 백엔드 개발자와의 오해 없는 소통을 주도하고 프로젝트의 안정적인 마일스톤을 달성합니다.
+                디자이너와는 UI 디테일을 싱크하고 백엔드와는 API 스펙을 명확히 조율하여 재작업과 커뮤니케이션 비용을 최소화합니다.
               </p>
             </motion.div>
 
@@ -523,11 +776,11 @@ export default function App() {
               className="glass-card p-6 rounded-3xl border border-slate-200/80 bg-white"
             >
               <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center mb-4">
-                <Sparkles size={20} />
+                <MousePointerClick size={20} />
               </div>
-              <h4 className="font-bold text-slate-900 text-lg mb-2">살아 숨쉬는 인터랙션</h4>
+              <h4 className="font-bold text-slate-900 text-lg mb-2">목적과 흐름이 있는 마이크로 인터랙션</h4>
               <p className="text-slate-600 text-xs md:text-sm leading-relaxed break-keep">
-                Framer Motion을 활용한 마이크로 애니메이션, 시각적 피드백, 반응형 전환 효과를 통해 유저가 서비스를 직관적이고 즐겁게 탐색하도록 설계합니다.
+                과한 연출은 지양하고, Motion 라이브러리 등을 활용해 사용자의 집중을 방해하지 않는 자연스러운 화면 전환과 피드백을 설계합니다.
               </p>
             </motion.div>
           </div>
@@ -536,6 +789,7 @@ export default function App() {
         {/* Section: Core Skills Matrix */}
         <motion.section
           id="skills"
+          className="scroll-mt-28"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -560,12 +814,14 @@ export default function App() {
                 borderColor: 'border-blue-200',
                 bgBadge: 'bg-blue-50',
                 skills: [
-                  { name: 'React', desc: '함수형 컴포넌트, 커스텀 훅, 상태 관리 및 최적화' },
-                  { name: 'Next.js', desc: 'App/Pages Router, SSR/SSG, SEO 최적화 및 관리자 구축' },
-                  { name: 'TypeScript', desc: '엄격한 타입 안전성 확보 및 유지보수성 향상' },
-                  { name: 'Tailwind CSS', desc: '유틸리티 우선 CSS 및 최신 v4 아키텍처 실무 적용' },
-                  { name: 'Framer Motion', desc: '풍부한 마이크로 인터랙션, 페이지 전환, 스프링 모션' },
-                  { name: 'React Query / Recoil', desc: '서버 상태 캐싱 및 전역 클라이언트 상태 설계' }
+                  { name: 'React', desc: '커스텀 훅을 통한 비즈니스 로직 분리 및 컴포넌트 최적화' },
+                  { name: 'Next.js', desc: 'App Router, SSR/SSG, SEO 최적화 및 관리자 구축' },
+                  { name: 'TypeScript', desc: 'API 응답 및 Props 인터페이스 정의로 런타임 타입 에러 차단' },
+                  { name: 'Storybook', desc: '컴포넌트 문서화 및 스타일 가이드 작성' },
+                  { name: 'Tailwind CSS', desc: '유틸리티 우선 CSS 실무 적용' },
+                  { name: 'Framer Motion', desc: '자연스러운 화면 전환과 제스처/스프링 마이크로 인터랙션 구현' },
+                  { name: 'React Query', desc: '서버 상태 캐싱 및 불필요한 재요청 방지' },
+                  { name: 'Recoil / Zustand / Jotai', desc: '전역 클라이언트 상태 설계 및 효율적인 데이터 흐름 관리' }
                 ]
               },
               {
@@ -602,10 +858,10 @@ export default function App() {
                 borderColor: 'border-amber-200',
                 bgBadge: 'bg-amber-50',
                 skills: [
-                  { name: 'Toss Payments', desc: '토스페이먼츠 PG 연동, 결제/취소/부분환불 프로세스' },
+                  { name: 'Toss Payments', desc: '토스페이먼츠 PG 연동 (프론트엔드)' },
                   { name: 'MUX Video Streaming', desc: '적응형 비디오 스트리밍 API 연동 및 플레이어' },
                   { name: 'OAuth2 Social Login', desc: '카카오, 네이버, 구글, 애플 4종 소셜 로그인' },
-                  { name: 'Vite / Webpack / CRA', desc: '번들러 최적화 및 신규 프로젝트 보일러플레이트 세팅' }
+                  { name: 'Vite / Webpack / CRA', desc: '프로젝트 보일러플레이트 세팅' }
                 ]
               }
             ].map((group, idx) => (
@@ -646,6 +902,7 @@ export default function App() {
         {/* Section: Projects (Interactive Filter & Cards) */}
         <motion.section
           id="projects"
+          className="scroll-mt-28"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -654,7 +911,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200">
-                <Award size={22} />
+                <FolderGit2 size={22} />
               </div>
               <div>
                 <span className="text-xs font-mono uppercase tracking-wider text-indigo-600 font-bold">Featured Works</span>
@@ -672,9 +929,8 @@ export default function App() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveFilter(tab.id as any)}
-                  className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
-                    activeFilter === tab.id ? 'text-white' : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-colors ${activeFilter === tab.id ? 'text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   {activeFilter === tab.id && (
                     <motion.div
@@ -707,11 +963,10 @@ export default function App() {
                   <div>
                     {/* Top Row */}
                     <div className="flex items-start justify-between gap-4 mb-4">
-                      <span className={`text-[11px] font-bold font-mono uppercase px-3 py-1 rounded-full border ${
-                        prj.category === 'work'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-purple-50 text-purple-700 border-purple-200'
-                      }`}>
+                      <span className={`text-[11px] font-bold font-mono uppercase px-3 py-1 rounded-full border ${prj.category === 'work'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : 'bg-purple-50 text-purple-700 border-purple-200'
+                        }`}>
                         {prj.categoryLabel}
                       </span>
                       <span className="text-xs font-mono text-slate-500 font-medium">{prj.period}</span>
@@ -721,19 +976,29 @@ export default function App() {
                     <h3 className="text-xl md:text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors mb-2">
                       {prj.title}
                     </h3>
-                    <p className="text-xs md:text-sm text-blue-600 font-semibold mb-4">
+                    <p className="text-xs md:text-sm text-blue-600 font-semibold mb-3">
                       {prj.subtitle}
                     </p>
+
+                    {/* Team Members Tag */}
+                    {prj.teamMembers && (
+                      <div className="flex items-center gap-1.5 mb-4 text-xs text-slate-600 font-medium">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-700">
+                          <Users size={13} className="text-violet-600 flex-shrink-0" />
+                          <span>{prj.teamMembers}</span>
+                        </span>
+                      </div>
+                    )}
                     <p className="text-sm text-slate-600 leading-relaxed mb-6 break-keep line-clamp-3">
                       {prj.summary}
                     </p>
 
                     {/* Highlights Preview */}
                     <div className="space-y-2 mb-6">
-                      {prj.details.slice(0, 2).map((d, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs text-slate-500">
+                      {prj.details.map((d, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
                           <ChevronRight size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                          <span className="line-clamp-1">{d}</span>
+                          <span className="break-keep leading-relaxed">{d}</span>
                         </div>
                       ))}
                     </div>
@@ -770,6 +1035,7 @@ export default function App() {
         {/* Section: Work Experience Timeline */}
         <motion.section
           id="experience"
+          className="scroll-mt-28"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -812,7 +1078,7 @@ export default function App() {
                 period: '2022.09 ~ 2022.12',
                 company: '(주) 앤코어스',
                 role: '프론트엔드 개발자',
-                desc: '신규 모바일 앱 서비스를 홍보하는 반응형 인터랙티브 랜딩 페이지를 기획/제작하여 사용자 전환율을 향상시켰습니다.',
+                desc: '신규 모바일 앱 서비스를 홍보하는 반응형 인터랙티브 랜딩 페이지를 제작하였습니다.',
                 tags: ['React', 'JavaScript', 'HTML5/CSS3', 'Responsive Web']
               },
               {
@@ -863,6 +1129,7 @@ export default function App() {
         {/* Section: Education & Certifications (Bento Grid) */}
         <motion.section
           id="education"
+          className="scroll-mt-28"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -936,11 +1203,10 @@ export default function App() {
                   <motion.div
                     key={idx}
                     whileHover={{ y: -3 }}
-                    className={`glass-card p-4 rounded-2xl border ${
-                      cert.highlight
-                        ? 'border-amber-300 bg-amber-50/50'
-                        : 'border-slate-200/80 bg-white'
-                    } flex items-center justify-between transition-all shadow-sm`}
+                    className={`glass-card p-4 rounded-2xl border ${cert.highlight
+                      ? 'border-amber-300 bg-amber-50/50'
+                      : 'border-slate-200/80 bg-white'
+                      } flex items-center justify-between transition-all shadow-sm`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${cert.highlight ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]' : 'bg-slate-400'}`} />
@@ -957,11 +1223,11 @@ export default function App() {
         {/* Section: Contact & CTA */}
         <motion.section
           id="contact"
+          className="scroll-mt-28 relative"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="relative"
         >
           <div className="glass-card p-8 md:p-14 rounded-3xl border border-slate-200/90 relative overflow-hidden text-center bg-gradient-to-b from-blue-50/70 via-white to-slate-50 shadow-xl shadow-slate-200/50">
             {/* Ambient Lighting */}
@@ -969,16 +1235,17 @@ export default function App() {
 
             <div className="relative z-10 max-w-2xl mx-auto">
               <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-mono text-xs font-bold mb-4 border border-blue-200">
-                Let's Build Something Great Together
+                Get in Touch
               </span>
 
               <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight leading-tight break-keep">
-                함께 성장하고 멋진 서비스를 만들 동료를 찾으시나요?
+                사용자 경험에 진심이고, 주도적으로 문제를 해결하는 개발자를 찾으시나요?
               </h2>
 
               <p className="text-sm md:text-base text-slate-600 mb-10 leading-relaxed break-keep">
-                사용자 중심의 인터랙션과 안정적인 인프라를 바탕으로 팀의 비전을 기술로 완성해내겠습니다.
-                채용 문의나 프로젝트 제안 등 언제든 편하게 연락해 주세요!
+                섬세한 UI 디테일부터 안정적인 배포 파이프라인까지, 오너십을 갖고 서비스를 완성해 나갑니다.
+                <br className="hidden sm:inline" />
+                프론트엔드 포지션 채용이나 협업 제안, 커피챗 등 언제든 편하게 연락해 주세요!
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-4">
@@ -1055,103 +1322,544 @@ export default function App() {
       {/* Interactive Project Detail Modal */}
       <AnimatePresence>
         {selectedProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedProject(null)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-md"
             />
 
             {/* Modal Dialog Content */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto glass-card p-6 sm:p-8 rounded-3xl border border-slate-200 bg-white shadow-2xl z-10 text-slate-900"
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+              className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-slate-200/90 bg-white shadow-2xl z-10 text-slate-900 overflow-hidden"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors"
-                aria-label="모달 닫기"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="mb-4">
-                <span className={`text-[11px] font-mono uppercase px-3 py-1 rounded-full border ${
-                  selectedProject.category === 'work'
+              {/* Modal Top Sticky Header Bar */}
+              <div className="sticky top-0 z-30 flex items-center justify-between px-5 sm:px-8 py-3.5 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
+                <div className="flex items-center gap-2.5">
+                  <span className={`text-[11px] font-mono font-bold uppercase px-3 py-1 rounded-full border ${selectedProject.category === 'work'
                     ? 'bg-blue-50 text-blue-700 border-blue-200'
                     : 'bg-purple-50 text-purple-700 border-purple-200'
-                }`}>
-                  {selectedProject.categoryLabel}
-                </span>
-                <span className="ml-3 text-xs font-mono text-slate-500 font-semibold">{selectedProject.period}</span>
+                    }`}>
+                    {selectedProject.categoryLabel}
+                  </span>
+                  <span className="text-xs font-mono font-semibold text-slate-400">
+                    PROJECT · 0{currentIndex + 1} / 0{PROJECTS_DATA.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Prev / Next Quick Nav Controls */}
+                  <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50/80 p-0.5 text-slate-600">
+                    <button
+                      onClick={() => prevProject && setSelectedProject(prevProject)}
+                      disabled={!prevProject}
+                      className="p-1.5 rounded-lg hover:bg-white hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-600 transition-all cursor-pointer disabled:cursor-not-allowed"
+                      title={prevProject ? `이전: ${prevProject.title}` : '첫 번째 프로젝트입니다'}
+                      aria-label="이전 프로젝트"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <div className="w-px h-3.5 bg-slate-200 mx-0.5" />
+                    <button
+                      onClick={() => nextProject && setSelectedProject(nextProject)}
+                      disabled={!nextProject}
+                      className="p-1.5 rounded-lg hover:bg-white hover:text-blue-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-600 transition-all cursor-pointer disabled:cursor-not-allowed"
+                      title={nextProject ? `다음: ${nextProject.title}` : '마지막 프로젝트입니다'}
+                      aria-label="다음 프로젝트"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setSelectedProject(null)}
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-500 hover:text-slate-900 border border-slate-200/80 transition-all hover:rotate-90 active:scale-95 ml-1 cursor-pointer"
+                    aria-label="모달 닫기"
+                    title="닫기 (ESC)"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
 
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">
-                {selectedProject.title}
-              </h3>
-              <p className="text-blue-600 font-bold text-sm mb-6">
-                역할: {selectedProject.role}
-              </p>
+              {/* Scrollable Modal Body */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 sm:px-10 py-6 sm:py-8 space-y-6 sm:space-y-7 relative">
+                {/* Ambient Glows inside modal (clipped to avoid horizontal scrollbar) */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl -mr-10 -mt-10" />
+                  <div className="absolute top-1/2 left-0 w-80 h-80 bg-indigo-50/40 rounded-full blur-3xl -ml-10" />
+                </div>
 
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-6">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-2 font-bold">프로젝트 개요</h4>
-                <p className="text-sm text-slate-700 leading-relaxed break-keep">
-                  {selectedProject.summary}
-                </p>
-              </div>
+                {/* Hero Header & Overview Area */}
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-mono text-slate-400">
+                    <span className="text-blue-600 font-bold uppercase tracking-wider">PROJECT DEEP-DIVE</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar size={12} className="text-slate-400" />
+                      {selectedProject.period}
+                    </span>
+                  </div>
 
-              {selectedProject.metrics && (
-                <div className="mb-6">
-                  <h4 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-bold">핵심 성과 & 임팩트</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {selectedProject.metrics.map((m, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/80 text-center">
-                        <CheckCircle2 size={16} className="text-blue-600 mx-auto mb-1.5" />
-                        <span className="text-xs font-bold text-slate-800">{m}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                      {selectedProject.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm sm:text-base text-slate-500 font-semibold mb-4 leading-normal">
+                    {selectedProject.subtitle}
+                  </p>
+
+                  {/* Simple Screenshots Preview Gallery */}
+                  {selectedProject.screenshots && selectedProject.screenshots.length > 0 && (
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between gap-2 mb-2.5 px-0.5">
+                        <div className="flex items-center gap-2">
+                        </div>
+
+                        {/* Navigation Scroll Buttons */}
+                        {selectedProject.screenshots.length > 1 && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleGalleryScroll('left')}
+                              disabled={!canScrollLeft}
+                              className="p-1 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer shadow-2xs"
+                              title="이전 화면 보기"
+                              aria-label="이전 화면 보기"
+                            >
+                              <ChevronLeft size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleGalleryScroll('right')}
+                              disabled={!canScrollRight}
+                              className="p-1 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer shadow-2xs"
+                              title="다음 화면 보기"
+                              aria-label="다음 화면 보기"
+                            >
+                              <ChevronRight size={15} />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    ))}
+
+                      {/* Horizontal Scroll & Drag Gallery */}
+                      <div className="relative">
+                        <div
+                          ref={galleryRef}
+                          onMouseDown={handleGalleryMouseDown}
+                          onMouseMove={handleGalleryMouseMove}
+                          onMouseUp={handleGalleryMouseUp}
+                          onMouseLeave={handleGalleryMouseUp}
+                          className="flex gap-3 sm:gap-4 overflow-x-auto -mx-2 sm:-mx-3 px-2 sm:px-3 pt-2 pb-3.5 scroll-smooth select-none cursor-grab active:cursor-grabbing snap-x snap-mandatory [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] scrollbar-thumb-slate-200 scrollbar-track-transparent"
+                        >
+                          {selectedProject.screenshots.map((item, idx) => {
+                            const data = getScreenshotData(item, idx);
+
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  if (dragDistance.current < 6) {
+                                    setSelectedImageIndex(idx);
+                                  }
+                                }}
+                                className="group flex-shrink-0 cursor-pointer snap-start relative rounded-2xl overflow-hidden border border-slate-200/90 bg-slate-50 shadow-2xs hover:shadow-md hover:border-blue-400 transition-all duration-200 p-[16px]"
+                              >
+                                <img
+                                  src={data.src}
+                                  alt={data.alt}
+                                  className="h-56 sm:h-64 md:h-72 w-auto object-contain pointer-events-none transition-transform duration-300 group-hover:scale-[1.02]"
+                                  loading="lazy"
+                                  draggable={false}
+                                />
+                                <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/20 transition-colors flex items-center justify-center pointer-events-none">
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/75 text-white text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1 shadow-sm">
+                                    <ZoomIn size={12} />
+                                    <span>확대</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {/* Trailing spacer to prevent shadow clipping at scroll end */}
+                          <div className="w-1.5 flex-shrink-0" aria-hidden="true" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vertical Metadata Spec List */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 sm:p-5 backdrop-blur-xs mb-3.5">
+                    <div className="divide-y divide-slate-200/60">
+                      {/* Period */}
+                      <div className="py-2 first:pt-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                        <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                          <Calendar size={14} className="text-blue-600" />
+                          진행 기간
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 break-keep">
+                          {selectedProject.period}
+                        </span>
+                      </div>
+
+                      {/* Role */}
+                      <div className="py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                        <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                          <User size={14} className="text-indigo-600" />
+                          담당 역할
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 break-keep">
+                          {selectedProject.role}
+                        </span>
+                      </div>
+
+                      {/* Team Composition */}
+                      {selectedProject.teamMembers && (
+                        <div className="py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                            <Users size={14} className="text-violet-600" />
+                            팀 구성
+                          </span>
+                          <span className="text-xs sm:text-sm font-semibold text-slate-800 break-keep">
+                            {selectedProject.teamMembers}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Platform */}
+                      <div className="py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                        <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                          <Smartphone size={14} className="text-cyan-600" />
+                          서비스 형태
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 break-keep">
+                          {selectedProject.platform || '웹 / 모바일'}
+                        </span>
+                      </div>
+
+                      {/* Team / Contribution */}
+                      <div className="py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                        <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                          <Workflow size={14} className="text-emerald-600" />
+                          기여도 & 포지션
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-800 break-keep">
+                          {selectedProject.team || selectedProject.role}
+                        </span>
+                      </div>
+
+                      {/* Service Links (if any) */}
+                      {selectedProject.links && (
+                        <div className="py-2 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                            <ExternalLink size={14} className="text-blue-600" />
+                            서비스 링크
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {selectedProject.links.appStore && (
+                              <a
+                                href={selectedProject.links.appStore}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-900 hover:bg-blue-600 text-white text-xs font-semibold shadow-2xs transition-all active:scale-95 group"
+                              >
+                                <Smartphone size={12} className="text-blue-400 group-hover:text-white transition-colors" />
+                                <span>App Store</span>
+                                <ArrowUpRight size={12} className="text-slate-400 group-hover:text-white transition-colors" />
+                              </a>
+                            )}
+                            {selectedProject.links.playStore && (
+                              <a
+                                href={selectedProject.links.playStore}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-semibold border border-slate-200/90 shadow-2xs transition-all active:scale-95 group"
+                              >
+                                <span>Google Play</span>
+                                <ArrowUpRight size={12} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                              </a>
+                            )}
+                            {selectedProject.links.web && (
+                              <a
+                                href={selectedProject.links.web}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-semibold border border-slate-200/90 shadow-2xs transition-all active:scale-95 group"
+                              >
+                                <span>웹사이트</span>
+                                <ArrowUpRight size={12} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                              </a>
+                            )}
+                            {selectedProject.links.github && (
+                              <a
+                                href={selectedProject.links.github}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-semibold border border-slate-200/90 shadow-2xs transition-all active:scale-95 group"
+                              >
+                                <span>GitHub</span>
+                                <ArrowUpRight size={12} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tech Stack */}
+                      <div className="py-2 last:pb-0 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                        <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 sm:w-36 flex-shrink-0">
+                          <Layers size={14} className="text-purple-600" />
+                          주요 기술
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {selectedProject.tech.map(t => (
+                            <span
+                              key={t}
+                              className="text-xs font-mono px-2.5 py-0.5 rounded-md bg-white text-slate-700 font-semibold border border-slate-200/90 shadow-2xs"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Executive Summary Card */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-white border border-blue-100 shadow-xs">
+                    <div className="flex items-center gap-2 mb-1.5 text-xs font-mono uppercase tracking-wider text-blue-800 font-bold">
+                      <FileText size={15} className="text-blue-600" />
+                      <span>프로젝트 개요 (Executive Summary)</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed break-keep font-medium">
+                      {selectedProject.summary}
+                    </p>
                   </div>
                 </div>
-              )}
 
-              <div className="mb-6">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-bold">상세 개발 내용</h4>
-                <div className="space-y-2.5">
-                  {selectedProject.details.map((d, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-700">
-                      <ChevronRight size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                      <span className="break-keep leading-relaxed">{d}</span>
+                {/* Key Achievements Cards */}
+                {selectedProject.metrics && (
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3 text-xs font-mono uppercase tracking-wider text-slate-500 font-bold">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 size={15} className="text-emerald-600" />
+                        <span>핵심 기술 성과 및 비즈니스 임팩트</span>
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400">3 Key Highlights</span>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      {selectedProject.metrics.map((m, i) => (
+                        <div
+                          key={i}
+                          className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 border border-slate-200/90 hover:border-blue-300 flex flex-col justify-between text-left shadow-xs hover:shadow-md transition-all group"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-mono text-xs font-black text-blue-600 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-lg">
+                              0{i + 1}
+                            </span>
+                            <div className="w-7 h-7 rounded-lg bg-blue-100/70 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <CheckCircle2 size={15} />
+                            </div>
+                          </div>
+                          <p className="text-xs sm:text-sm font-bold text-slate-800 leading-snug break-keep">
+                            {m}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Markdown Section */}
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-3.5 text-xs font-mono uppercase tracking-wider text-slate-500 font-bold">
+                    <Terminal size={15} className="text-indigo-600" />
+                    <span>상세 개발 내용 & 트러블슈팅 케이스</span>
+                  </div>
+
+                  {selectedProject.content ? (
+                    <div className="p-6 sm:p-9 rounded-3xl bg-white border border-slate-200 shadow-xs text-slate-800 max-w-full overflow-hidden break-words">
+                      <selectedProject.content components={mdxComponents} />
+                    </div>
+                  ) : selectedProject.markdown ? (
+                    <div className="p-6 sm:p-9 rounded-3xl bg-white border border-slate-200 shadow-xs text-slate-800 max-w-full overflow-hidden break-words">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={mdxComponents}
+                      >
+                        {selectedProject.markdown}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {selectedProject.details.map((d, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-700">
+                          <ChevronRight size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                          <span className="break-keep leading-relaxed">{d}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-slate-500 mb-3 font-bold">사용 기술 스택</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedProject.tech.map(t => (
-                    <span key={t} className="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-blue-700 font-bold">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              {/* Bottom Sticky Navigation Bar */}
+              <div className="sticky bottom-0 z-30 px-5 sm:px-8 py-3.5 bg-white/95 backdrop-blur-md border-t border-slate-200/80 flex items-center justify-between gap-3">
+                {prevProject ? (
+                  <button
+                    onClick={() => setSelectedProject(prevProject)}
+                    className="group flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors max-w-[35%] truncate cursor-pointer"
+                  >
+                    <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform flex-shrink-0 text-slate-400 group-hover:text-blue-600" />
+                    <span className="truncate">이전: {prevProject.title}</span>
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-300 font-mono">FIRST PROJECT</span>
+                )}
 
-              <div className="pt-4 border-t border-slate-200 flex justify-end">
                 <button
                   onClick={() => setSelectedProject(null)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
+                  className="px-6 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm active:scale-95 flex-shrink-0 cursor-pointer"
                 >
-                  닫기
+                  목록으로 닫기
                 </button>
+
+                {nextProject ? (
+                  <button
+                    onClick={() => setSelectedProject(nextProject)}
+                    className="group flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors max-w-[35%] truncate ml-auto cursor-pointer"
+                  >
+                    <span className="truncate">다음: {nextProject.title}</span>
+                    <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform flex-shrink-0 text-slate-400 group-hover:text-blue-600" />
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-300 font-mono ml-auto">LAST PROJECT</span>
+                )}
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Screenshot Lightbox Modal */}
+      <AnimatePresence>
+        {selectedImageIndex !== null && selectedProject?.screenshots && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImageIndex(null)}
+              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md cursor-zoom-out"
+            />
+
+            {/* Lightbox Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative max-w-5xl max-h-[92vh] w-full flex flex-col bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-10 text-white"
+            >
+              {(() => {
+                const item = selectedProject.screenshots[selectedImageIndex];
+                if (!item) return null;
+                const data = getScreenshotData(item, selectedImageIndex);
+                const totalCount = selectedProject.screenshots.length;
+
+                return (
+                  <>
+                    {/* Lightbox Header */}
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-slate-900/95 border-b border-slate-800 text-xs">
+                      <div className="flex items-center gap-2.5 truncate max-w-[70%]">
+                        <span className="font-mono font-bold text-blue-400 bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-800/80 text-[11px]">
+                          {selectedImageIndex + 1} / {totalCount}
+                        </span>
+                        <span className="text-slate-300 font-medium truncate">
+                          {data.caption || `${selectedProject.title} 서비스 화면`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {totalCount > 1 && (
+                          <div className="flex items-center gap-1 mr-2 border-r border-slate-800 pr-2">
+                            <button
+                              onClick={() => setSelectedImageIndex(prev => (prev !== null && prev > 0 ? prev - 1 : totalCount - 1))}
+                              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                              title="이전 이미지 (←)"
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button
+                              onClick={() => setSelectedImageIndex(prev => (prev !== null && prev < totalCount - 1 ? prev + 1 : 0))}
+                              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                              title="다음 이미지 (→)"
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setSelectedImageIndex(null)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                          title="닫기 (ESC)"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lightbox Image Viewport */}
+                    <div className="relative flex-1 p-3 sm:p-6 flex items-center justify-center overflow-auto max-h-[calc(92vh-100px)] bg-slate-950/70">
+                      {totalCount > 1 && (
+                        <>
+                          <button
+                            onClick={() => setSelectedImageIndex(prev => (prev !== null && prev > 0 ? prev - 1 : totalCount - 1))}
+                            className="absolute left-3 sm:left-5 z-20 p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 shadow-lg backdrop-blur-xs transition-all cursor-pointer"
+                            title="이전 이미지 (←)"
+                          >
+                            <ChevronLeft size={20} />
+                          </button>
+                          <button
+                            onClick={() => setSelectedImageIndex(prev => (prev !== null && prev < totalCount - 1 ? prev + 1 : 0))}
+                            className="absolute right-3 sm:right-5 z-20 p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 shadow-lg backdrop-blur-xs transition-all cursor-pointer"
+                            title="다음 이미지 (→)"
+                          >
+                            <ChevronRight size={20} />
+                          </button>
+                        </>
+                      )}
+
+                      <img
+                        src={data.src}
+                        alt={data.alt}
+                        className="max-h-[calc(92vh-130px)] max-w-full w-auto h-auto object-contain rounded-xl shadow-2xl select-none"
+                      />
+                    </div>
+
+                    {/* Lightbox Caption Footer */}
+                    {data.caption && (
+                      <div className="px-5 py-3 bg-slate-900/90 border-t border-slate-800 text-center">
+                        <p className="text-xs sm:text-sm text-slate-300 font-medium break-keep">
+                          {data.caption}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </motion.div>
           </div>
         )}

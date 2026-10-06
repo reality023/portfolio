@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+.pnpm-store
+.git
+.github
+.vscode
+.idea
+*.log
+.DS_Store
+README.md
