@@ -4,6 +4,7 @@ import HiMeContent from './../content/projects/hi-me.mdx';
 import ValueLinkContent from './../content/projects/valuelink.mdx';
 import DearMyHomeContent from './../content/projects/dearmyhome.mdx';
 import PomeContent from './../content/projects/pome.mdx';
+import MoumContent from './../content/projects/moum.mdx';
 
 export interface ProjectScreenshot {
     src: string;
@@ -256,5 +257,91 @@ export const PROJECTS_DATA: ProjectItem[] = [
             },
         ],
         content: PomeContent
+    },
+    {
+        id: 'moum',
+        category: 'side',
+        categoryLabel: '사이드 프로젝트',
+        title: 'MOUM (모음)',
+        subtitle: '링크 및 메모 큐레이션/아카이빙 서비스',
+        period: '2022.06 ~ 2022.08',
+        role: '프론트엔드 개발 (팀 6명 중 FE 2명)',
+        platform: '반응형 웹',
+        team: '프론트엔드 개발',
+        teamMembers: '프론트엔드 2명, 백엔드 3명, 디자이너 1명',
+        tech: ['React', 'TypeScript', 'React Query', 'Recoil', 'Tailwind CSS', 'Axios'],
+        summary: '카카오톡이나 메모장에 산발적으로 임시 저장하던 링크와 메모를 한곳에 모으고(모음 & 조각 단위) 빠르게 보관·공유·스크랩할 수 있는 아카이빙 플랫폼입니다.',
+        links: {
+            github: 'https://github.com/reality023/moum'
+        },
+        details: [
+            'React, TypeScript 기반 반응형 웹 클라이언트 화면 및 기능 구현',
+            'React Query를 통한 서버 데이터 캐싱 및 Recoil 기반 UI 전역 상태 관리',
+            '모음(보드) 및 조각(메모/링크) CRUD, 키워드 검색, 태그 필터링 및 커스텀 순서 정렬 기능 구현',
+            '하단 플로팅 바를 통한 퀵 조각 생성 및 상세 편집 인터랙션 구현',
+            'Axios 인터셉터 기반 JWT Access/Refresh Token 재발급 및 로그인 상태 관리',
+            'Google OAuth 2.0 소셜 로그인 및 이메일 인증번호 발송/검증 기반 회원가입 플로우 연동',
+            '배포 후 유저 피드백(1차 73명) 기반 온보딩 가이드, 토스트 전환 등 6가지 사용성 개선 진행'
+        ],
+        metrics: [
+            '유저 피드백 반영 후 서비스 만족도 52.3% → 90.0% (37.7%p 상승) 달성',
+            'React Query 데이터 캐싱 적용으로 불필요한 네트워크 요청 감소',
+            '하단 플로팅 퀵 입력 인터페이스 도입으로 조각 등록 편의성 개선'
+        ],
+        screenshots: [
+            {
+                src: './images/projects/moum/home.png',
+                caption: '첫 화면'
+            },
+            {
+                src: './images/projects/moum/login.png',
+                caption: '로그인 화면'
+            },
+            {
+                src: './images/projects/moum/moum01.png',
+                caption: '나의 모음'
+            },
+            {
+                src: './images/projects/moum/moum02.png',
+                caption: '나의 모음'
+            },
+            {
+                src: './images/projects/moum/moum03.png',
+                caption: '나의 모음'
+            },
+            {
+                src: './images/projects/moum/moum04.png',
+                caption: '나의 모음 폴더'
+            },
+            {
+                src: './images/projects/moum/all01.png',
+                caption: '전체 모음 홈'
+            },
+            {
+                src: './images/projects/moum/all02.png',
+                caption: '전체 모음 검색'
+            },
+            {
+                src: './images/projects/moum/other01.png',
+                caption: '전체 모음 대상 폴더'
+            },
+            {
+                src: './images/projects/moum/other02.png',
+                caption: '전체 모음 대상 폴더 내부'
+            },
+            {
+                src: './images/projects/moum/mypage01.png',
+                caption: '마이페이지'
+            },
+            {
+                src: './images/projects/moum/mypage02.png',
+                caption: '마이페이지'
+            },
+            {
+                src: './images/projects/moum/mypage03.png',
+                caption: '마이페이지'
+            }
+        ],
+        content: MoumContent
     }
 ];

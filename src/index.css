@@ -16,6 +16,10 @@
     color: #0f172a;
     overflow-x: hidden;
   }
+
+  strong, b {
+    font-weight: 700;
+  }
 }
 
 /* Custom sleek light scrollbar */

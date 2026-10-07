@@ -157,7 +157,7 @@ const mdxComponents: Record<string, any> = {
       );
     }
     return (
-      <strong className="font-bold text-blue-900 bg-blue-50/90 px-1.5 py-0.5 rounded border border-blue-200/60" {...props}>
+      <strong className="font-bold text-slate-900" {...props}>
         {children}
       </strong>
     );
